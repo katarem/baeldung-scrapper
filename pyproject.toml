@@ -1,0 +1,36 @@
+[project]
+name = "baeldung-java-daily-scrapper"
+version = "0.1.0"
+description = "Foundational project for daily Baeldung Java article scraping and cloud sync"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+  "pydantic>=2.10.0,<3.0.0",
+  "pydantic-settings>=2.7.0,<3.0.0",
+  "httpx>=0.28.0,<1.0.0",
+  "playwright>=1.52.0,<2.0.0",
+  "beautifulsoup4>=4.12.3,<5.0.0",
+  "boto3>=1.35.0,<2.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.3.0,<9.0.0",
+  "pytest-cov>=6.0.0,<7.0.0",
+]
+
+[project.scripts]
+baeldung-scrapper-run = "baeldung_scrapper.run:main"
+
+[build-system]
+requires = ["setuptools>=75.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+addopts = "-ra"
+testpaths = ["tests"]
+pythonpath = ["src"]

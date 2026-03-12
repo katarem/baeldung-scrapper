@@ -1,0 +1,6 @@
+.pytest_cache
+*.log
+.tmp
+.venv
+openspec
+*.egg-info
