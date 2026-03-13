@@ -28,8 +28,13 @@ class HttpxHttpClient(HttpClient):
         try:
             response = httpx.get(url, timeout=timeout_seconds)
             response.raise_for_status()
+        except httpx.HTTPStatusError as exc:
+            status = exc.response.status_code if exc.response is not None else "unknown"
+            raise FetchError(f"failed to fetch url: {url} (status={status})") from exc
+        except httpx.RequestError as exc:
+            raise FetchError(f"failed to fetch url: {url} ({type(exc).__name__}: {exc})") from exc
         except Exception as exc:
-            raise FetchError(f"failed to fetch url: {url}") from exc
+            raise FetchError(f"failed to fetch url: {url} ({type(exc).__name__}: {exc})") from exc
         return response.text
 
 
@@ -58,12 +63,13 @@ class PlaywrightHttpClient(HttpClient):
             ) from exc
 
         timeout_ms = max(int(timeout_seconds * 1000), 1)
+        last_reason = "unknown"
 
         try:
             with sync_playwright() as playwright:
                 launcher = getattr(playwright, self.browser_name, None)
                 if launcher is None:
-                    raise FetchError(f"failed to fetch url: {url}")
+                    raise FetchError(f"failed to fetch url: {url} (unsupported_browser={self.browser_name})")
 
                 browser = launcher.launch(headless=True, args=list(self.launch_args))
                 context = browser.new_context(
@@ -96,22 +102,27 @@ class PlaywrightHttpClient(HttpClient):
                         if status < 400 and not challenge_detected:
                             return content
 
+                        if status >= 400:
+                            last_reason = f"status={status}"
+                        elif challenge_detected:
+                            last_reason = "cloudflare_challenge_detected"
+
                         if attempt < attempts:
                             page.wait_for_timeout(self.challenge_wait_ms)
                             continue
 
-                        raise FetchError(f"failed to fetch url: {url}")
+                        raise FetchError(f"failed to fetch url: {url} ({last_reason})")
 
-                    raise FetchError(f"failed to fetch url: {url}")
+                    raise FetchError(f"failed to fetch url: {url} ({last_reason})")
                 finally:
                     context.close()
                     browser.close()
         except timeout_error as exc:
-            raise FetchError(f"failed to fetch url: {url}") from exc
+            raise FetchError(f"failed to fetch url: {url} (TimeoutError)") from exc
         except FetchError:
             raise
         except Exception as exc:
-            raise FetchError(f"failed to fetch url: {url}") from exc
+            raise FetchError(f"failed to fetch url: {url} ({type(exc).__name__}: {exc})") from exc
 
 
 def build_fetch_client(settings: AppSettings) -> HttpClient:

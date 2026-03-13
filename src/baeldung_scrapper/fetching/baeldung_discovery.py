@@ -142,13 +142,14 @@ def _discover_from_sitemaps(
             continue
         visited.add(sitemap_url)
 
-        payload = _safe_fetch_text(
-            http_client=http_client,
-            url=sitemap_url,
-            timeout_seconds=timeout_seconds,
-        )
-        if payload is None:
-            logger.warning("discovery_source_unavailable source=%s", sitemap_url)
+        try:
+            payload = _safe_fetch_text(
+                http_client=http_client,
+                url=sitemap_url,
+                timeout_seconds=timeout_seconds,
+            )
+        except FetchError as exc:
+            logger.warning("discovery_source_unavailable source=%s reason=%s", sitemap_url, str(exc))
             continue
 
         locations = _extract_sitemap_locations(payload)
@@ -212,13 +213,14 @@ def _discover_from_hub_with_pagination(
             continue
         visited_pages.add(page_url)
 
-        payload = _safe_fetch_text(
-            http_client=http_client,
-            url=page_url,
-            timeout_seconds=timeout_seconds,
-        )
-        if payload is None:
-            logger.warning("discovery_source_unavailable source=%s", page_url)
+        try:
+            payload = _safe_fetch_text(
+                http_client=http_client,
+                url=page_url,
+                timeout_seconds=timeout_seconds,
+            )
+        except FetchError as exc:
+            logger.warning("discovery_source_unavailable source=%s reason=%s", page_url, str(exc))
             continue
 
         soup = BeautifulSoup(payload, "html.parser")
@@ -259,11 +261,8 @@ def _discover_from_hub_with_pagination(
     return discovered
 
 
-def _safe_fetch_text(*, http_client: HttpClient, url: str, timeout_seconds: float) -> str | None:
-    try:
-        return http_client.get_text(url=url, timeout_seconds=timeout_seconds)
-    except FetchError:
-        return None
+def _safe_fetch_text(*, http_client: HttpClient, url: str, timeout_seconds: float) -> str:
+    return http_client.get_text(url=url, timeout_seconds=timeout_seconds)
 
 
 def _canonicalize_url(*, candidate_url: str, source_scheme: str, source_host: str) -> str | None:
