@@ -21,6 +21,18 @@ def test_defaults_to_path_style_for_s3_compatible_endpoints() -> None:
     assert settings.s3_force_path_style is True
 
 
+def test_defaults_s3_object_acl_to_private() -> None:
+    settings = AppSettings(**_minimal_s3_settings())
+
+    assert settings.s3_object_acl == "private"
+
+
+def test_accepts_public_read_s3_object_acl() -> None:
+    settings = AppSettings(**{**_minimal_s3_settings(), "s3_object_acl": "public-read"})
+
+    assert settings.s3_object_acl == "public-read"
+
+
 def test_defaults_fetch_backend_to_playwright() -> None:
     settings = AppSettings(**_minimal_s3_settings())
 

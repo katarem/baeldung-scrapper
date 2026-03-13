@@ -46,6 +46,7 @@ playwright install chromium
 - `SCRAPER_S3_ACCESS_KEY_ID` - access key id
 - `SCRAPER_S3_SECRET_ACCESS_KEY` - secret access key
 - `SCRAPER_S3_FORCE_PATH_STYLE` - `true` or `false` (default `true`, recommended for Railway)
+- `SCRAPER_S3_OBJECT_ACL` - `private` (default) or `public-read` for frontend-readable objects
 
 Rules enforced by validation:
 
@@ -66,7 +67,10 @@ export SCRAPER_S3_BUCKET=baeldung-artifacts
 export SCRAPER_S3_ACCESS_KEY_ID=your-access-key-id
 export SCRAPER_S3_SECRET_ACCESS_KEY=your-secret-access-key
 export SCRAPER_S3_FORCE_PATH_STYLE=true
+export SCRAPER_S3_OBJECT_ACL=public-read
 ```
+
+If a Vite frontend will read objects directly from the bucket, set `SCRAPER_S3_OBJECT_ACL=public-read` and configure bucket CORS to allow your frontend origin(s).
 
 ### Example: Local filesystem mode
 

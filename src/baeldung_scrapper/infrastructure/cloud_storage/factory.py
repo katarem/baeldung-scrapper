@@ -41,6 +41,7 @@ def build_cloud_storage_provider(
             force_path_style=settings.s3_force_path_style,
         ),
         destination_folder_path=settings.destination_folder_path,
+        object_acl=settings.s3_object_acl,
     )
     return ProviderRuntimeBinding(provider=provider, destination_root_id=destination_root_id)
 

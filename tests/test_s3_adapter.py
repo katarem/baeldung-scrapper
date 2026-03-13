@@ -19,6 +19,7 @@ class FakeS3Client:
     def __init__(self) -> None:
         self.objects: dict[tuple[str, str], _StoredObject] = {}
         self.put_calls = 0
+        self.last_acl: str | None = None
 
     def get_object(self, *, bucket: str, object_key: str) -> bytes | None:
         stored = self.objects.get((bucket, object_key))
@@ -40,9 +41,11 @@ class FakeS3Client:
         mime_type: str,
         payload: bytes,
         checksum_sha256: str,
+        acl: str | None = None,
     ) -> S3Object:
         _ = mime_type
         self.put_calls += 1
+        self.last_acl = acl
         self.objects[(bucket, object_key)] = _StoredObject(payload=payload, checksum_sha256=checksum_sha256)
         return S3Object(object_key=object_key, checksum_sha256=checksum_sha256)
 
@@ -117,3 +120,17 @@ def test_rejects_object_path_outside_destination_folder_path() -> None:
             destination_root_id="railway-bucket",
             object_path="other-root/articles/java/item-1.json",
         )
+
+
+def test_upsert_passes_public_read_acl_when_configured() -> None:
+    client = FakeS3Client()
+    adapter = S3StorageAdapter(
+        client=client,
+        destination_folder_path="team/scraper",
+        object_acl="public-read",
+    )
+    item = _artifact(object_path="team/scraper/articles/java/item-1.json", payload=b"{\"v\":1}")
+
+    adapter.upsert(destination_root_id="railway-bucket", item=item)
+
+    assert client.last_acl == "public-read"

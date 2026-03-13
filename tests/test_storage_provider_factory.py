@@ -24,8 +24,9 @@ class _NoopS3Client:
         mime_type: str,
         payload: bytes,
         checksum_sha256: str,
+        acl: str | None = None,
     ) -> S3Object:
-        _ = (bucket, object_key, mime_type, payload, checksum_sha256)
+        _ = (bucket, object_key, mime_type, payload, checksum_sha256, acl)
         return S3Object(object_key=object_key, checksum_sha256=checksum_sha256)
 
 

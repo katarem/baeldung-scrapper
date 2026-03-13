@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 from dataclasses import dataclass
+from typing import Literal
 from typing import Any, Protocol
 
 from baeldung_scrapper.domain.models.storage_layout import normalize_relative_path, normalize_storage_root
@@ -33,6 +34,7 @@ class S3Client(Protocol):
         mime_type: str,
         payload: bytes,
         checksum_sha256: str,
+        acl: str | None = None,
     ) -> S3Object:
         ...
 
@@ -72,13 +74,20 @@ class Boto3S3ClientAdapter(S3Client):
         mime_type: str,
         payload: bytes,
         checksum_sha256: str,
+        acl: str | None = None,
     ) -> S3Object:
+        put_args: dict[str, Any] = {
+            "Bucket": bucket,
+            "Key": object_key,
+            "Body": payload,
+            "ContentType": mime_type,
+            "Metadata": {"checksum_sha256": checksum_sha256},
+        }
+        if acl is not None:
+            put_args["ACL"] = acl
+
         self._client.put_object(
-            Bucket=bucket,
-            Key=object_key,
-            Body=payload,
-            ContentType=mime_type,
-            Metadata={"checksum_sha256": checksum_sha256},
+            **put_args,
         )
         return S3Object(object_key=object_key, checksum_sha256=checksum_sha256)
 
@@ -86,9 +95,16 @@ class Boto3S3ClientAdapter(S3Client):
 class S3StorageAdapter(CloudStorageProvider):
     provider_name = "s3"
 
-    def __init__(self, *, client: S3Client, destination_folder_path: str) -> None:
+    def __init__(
+        self,
+        *,
+        client: S3Client,
+        destination_folder_path: str,
+        object_acl: Literal["private", "public-read"] = "private",
+    ) -> None:
         self._client = client
         self._destination_folder_path = normalize_storage_root(destination_folder_path)
+        self._object_acl = object_acl
 
     def upsert(self, *, destination_root_id: str, item: ArtifactObject) -> ArtifactWriteResult:
         bucket, object_key = self._resolve_bucket_and_key(
@@ -121,6 +137,7 @@ class S3StorageAdapter(CloudStorageProvider):
                 mime_type=item.mime_type,
                 payload=item.payload,
                 checksum_sha256=checksum,
+                acl=self._object_acl,
             )
         except CloudStorageAdapterError:
             raise

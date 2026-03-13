@@ -41,6 +41,7 @@ class AppSettings(BaseSettings):
     s3_access_key_id: Optional[str] = None
     s3_secret_access_key: Optional[str] = None
     s3_force_path_style: bool = True
+    s3_object_acl: Literal["private", "public-read"] = "private"
 
     @field_validator("source_base_url")
     @classmethod
