@@ -43,6 +43,11 @@ class PlaywrightHttpClient(HttpClient):
         "AppleWebKit/537.36 (KHTML, like Gecko) "
         "Chrome/124.0.0.0 Safari/537.36"
     )
+    launch_args: tuple[str, ...] = (
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage",
+    )
 
     def get_text(self, *, url: str, timeout_seconds: float) -> str:
         try:
@@ -60,7 +65,7 @@ class PlaywrightHttpClient(HttpClient):
                 if launcher is None:
                     raise FetchError(f"failed to fetch url: {url}")
 
-                browser = launcher.launch(headless=True)
+                browser = launcher.launch(headless=True, args=list(self.launch_args))
                 context = browser.new_context(
                     user_agent=self.user_agent,
                     locale="en-US",
